@@ -660,10 +660,9 @@
     // CONFIGURATION
     // ============================================
 
-    // URL where the icon metadata JSON is hosted.
-    // Change this to your own URL (GitHub Raw, S3, CDN, etc.)
-    // Set to '' or null to skip remote fetch and use manual import only.
-    const JSON_URL = '';
+    const REPO_BASE = 'https://raw.githubusercontent.com/manulcosta-ds/icon-esri/main';
+    const JSON_URL = REPO_BASE + '/icons.json';
+    const THUMBNAILS_URL = REPO_BASE + '/thumbnails.json';
 
     // How long (ms) to consider cached data fresh before re-fetching.
     // Default: 24 hours. Set to 0 to always fetch.
@@ -744,18 +743,61 @@
       }, '*');
     }
 
-    async function fetchRemoteJSON() {
-      try {
-        const response = await fetch(JSON_URL);
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data;
+    function cacheThumbnails(thumbs) {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'cache-thumbnails',
+          payload: { thumbnails: thumbs, timestamp: Date.now() }
         }
-        throw new Error('Invalid format: expected a non-empty array');
+      }, '*');
+    }
+
+    async function fetchJSON(url) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return await response.json();
       } catch (err) {
-        console.warn('Remote fetch failed:', err.message);
+        console.warn('Fetch failed (' + url + '):', err.message);
         return null;
+      }
+    }
+
+    function applyThumbnails(thumbs) {
+      if (!thumbs || typeof thumbs !== 'object') return;
+      allIcons.forEach(icon => {
+        if (thumbs[icon.id]) {
+          icon.svg_thumbnail = thumbs[icon.id];
+        }
+      });
+      renderIconGrid();
+    }
+
+    function loadThumbnails(cachedThumbs) {
+      if (cachedThumbs && cachedThumbs.thumbnails) {
+        const age = Date.now() - (cachedThumbs.timestamp || 0);
+        const isFresh = CACHE_MAX_AGE_MS > 0 && age < CACHE_MAX_AGE_MS;
+
+        applyThumbnails(cachedThumbs.thumbnails);
+
+        if (!isFresh && THUMBNAILS_URL) {
+          fetchJSON(THUMBNAILS_URL).then(data => {
+            if (data) {
+              cacheThumbnails(data);
+              applyThumbnails(data);
+            }
+          });
+        }
+        return;
+      }
+
+      if (THUMBNAILS_URL) {
+        fetchJSON(THUMBNAILS_URL).then(data => {
+          if (data) {
+            cacheThumbnails(data);
+            applyThumbnails(data);
+          }
+        });
       }
     }
 
@@ -767,22 +809,29 @@
         initializeWithData(cached.icons);
 
         if (!isFresh && JSON_URL) {
-          fetchRemoteJSON().then(data => {
-            if (data) {
+          fetchJSON(JSON_URL).then(data => {
+            if (data && Array.isArray(data) && data.length > 0) {
               cacheIconData(data);
               initializeWithData(data);
             }
           });
         }
+
+        parent.postMessage({
+          pluginMessage: { type: 'get-cached-thumbnails' }
+        }, '*');
         return;
       }
 
       if (JSON_URL) {
         showLoading();
-        fetchRemoteJSON().then(data => {
-          if (data) {
+        fetchJSON(JSON_URL).then(data => {
+          if (data && Array.isArray(data) && data.length > 0) {
             cacheIconData(data);
             initializeWithData(data);
+            parent.postMessage({
+              pluginMessage: { type: 'get-cached-thumbnails' }
+            }, '*');
           } else {
             showManualImport();
           }
@@ -798,6 +847,10 @@
 
       if (msg.type === 'cached-data') {
         handleCachedData(msg.payload);
+      }
+
+      if (msg.type === 'cached-thumbnails') {
+        loadThumbnails(msg.payload);
       }
     };
 
