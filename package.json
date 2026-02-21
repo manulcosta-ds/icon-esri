@@ -1,0 +1,16 @@
+{
+  "name": "arcgis-icon-browser",
+  "version": "1.0.0",
+  "description": "Browse and insert ArcGIS icons from a published Figma library",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "keywords": ["figma", "plugin", "icons", "arcgis", "esri"],
+  "author": "Manu",
+  "license": "MIT",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.50.0",
+    "typescript": "^5.0.0"
+  }
+}
