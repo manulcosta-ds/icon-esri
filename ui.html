@@ -1026,9 +1026,124 @@
     }
 
     // ============================================
-    // SEARCH
+    // SEARCH WITH SYNONYMS
     // ============================================
-    
+
+    var SYNONYMS = {
+      'plus':     ['add', 'new', 'create', 'insert', 'plus'],
+      'add':      ['plus', 'new', 'create', 'insert', 'add'],
+      'new':      ['add', 'plus', 'create', 'new'],
+      'create':   ['add', 'plus', 'new', 'create'],
+      'minus':    ['remove', 'subtract', 'delete', 'minus'],
+      'remove':   ['delete', 'minus', 'trash', 'erase', 'remove'],
+      'delete':   ['remove', 'minus', 'trash', 'erase', 'delete'],
+      'trash':    ['delete', 'remove', 'erase', 'trash'],
+      'close':    ['x', 'cancel', 'dismiss', 'exit', 'close'],
+      'cancel':   ['close', 'x', 'dismiss', 'cancel'],
+      'search':   ['find', 'magnify', 'lookup', 'search'],
+      'find':     ['search', 'magnify', 'lookup', 'find'],
+      'edit':     ['pencil', 'modify', 'write', 'pen', 'edit'],
+      'pencil':   ['edit', 'write', 'pen', 'pencil'],
+      'settings': ['gear', 'cog', 'config', 'preferences', 'settings'],
+      'gear':     ['settings', 'cog', 'config', 'gear'],
+      'home':     ['house', 'home'],
+      'house':    ['home', 'house'],
+      'check':    ['tick', 'done', 'complete', 'checkmark', 'check'],
+      'save':     ['disk', 'floppy', 'store', 'save'],
+      'download': ['export', 'save', 'download'],
+      'upload':   ['import', 'upload'],
+      'copy':     ['duplicate', 'clone', 'copy'],
+      'duplicate':['copy', 'clone', 'duplicate'],
+      'undo':     ['back', 'revert', 'undo'],
+      'redo':     ['forward', 'repeat', 'redo'],
+      'refresh':  ['reload', 'sync', 'update', 'refresh'],
+      'lock':     ['secure', 'locked', 'lock'],
+      'unlock':   ['unsecure', 'unlocked', 'unlock'],
+      'eye':      ['view', 'visible', 'show', 'visibility', 'eye'],
+      'visible':  ['eye', 'view', 'show', 'visibility', 'visible'],
+      'hide':     ['invisible', 'hidden', 'hide'],
+      'star':     ['favorite', 'bookmark', 'star'],
+      'favorite': ['star', 'bookmark', 'heart', 'favorite'],
+      'user':     ['person', 'profile', 'account', 'user'],
+      'person':   ['user', 'profile', 'account', 'people', 'person'],
+      'mail':     ['email', 'envelope', 'message', 'mail'],
+      'email':    ['mail', 'envelope', 'message', 'email'],
+      'chat':     ['message', 'comment', 'bubble', 'chat'],
+      'message':  ['chat', 'comment', 'mail', 'email', 'message'],
+      'calendar': ['date', 'schedule', 'event', 'calendar'],
+      'clock':    ['time', 'schedule', 'clock'],
+      'link':     ['chain', 'url', 'connect', 'link'],
+      'pin':      ['location', 'marker', 'pin'],
+      'map':      ['location', 'geography', 'geo', 'map'],
+      'folder':   ['directory', 'folder'],
+      'file':     ['document', 'doc', 'file'],
+      'image':    ['photo', 'picture', 'pic', 'image'],
+      'photo':    ['image', 'picture', 'pic', 'photo'],
+      'play':     ['start', 'run', 'play'],
+      'pause':    ['hold', 'pause'],
+      'stop':     ['end', 'halt', 'stop'],
+      'zoom':     ['magnify', 'scale', 'zoom'],
+      'filter':   ['funnel', 'filter'],
+      'sort':     ['order', 'arrange', 'sort'],
+      'layer':    ['stack', 'layer'],
+      'measure':  ['ruler', 'distance', 'measure'],
+      'select':   ['pick', 'choose', 'cursor', 'select'],
+      'move':     ['drag', 'pan', 'move'],
+      'rotate':   ['turn', 'spin', 'rotate'],
+      'crop':     ['trim', 'clip', 'crop'],
+      'arrow':    ['direction', 'navigate', 'pointer', 'arrow'],
+      'navigate': ['arrow', 'direction', 'navigation', 'navigate'],
+      'table':    ['grid', 'spreadsheet', 'table'],
+      'chart':    ['graph', 'bar', 'pie', 'chart'],
+      'graph':    ['chart', 'network', 'graph'],
+      'data':     ['database', 'dataset', 'table', 'data'],
+      'database': ['db', 'data', 'storage', 'database'],
+      'tool':     ['utility', 'instrument', 'tool'],
+      'info':     ['information', 'about', 'details', 'info'],
+      'information': ['info', 'about', 'details', 'information'],
+      'warning':  ['alert', 'caution', 'warn', 'warning'],
+      'alert':    ['warning', 'caution', 'notification', 'alert'],
+      'error':    ['danger', 'problem', 'bug', 'error'],
+      'help':     ['question', 'support', 'help'],
+      'question': ['help', 'ask', 'question'],
+      'share':    ['send', 'distribute', 'share'],
+      'print':    ['printer', 'output', 'print'],
+      'attach':   ['clip', 'paperclip', 'attachment', 'attach'],
+      'tag':      ['label', 'badge', 'tag'],
+      'label':    ['tag', 'badge', 'name', 'label'],
+      'color':    ['palette', 'paint', 'colour', 'fill', 'color'],
+      'text':     ['font', 'type', 'typography', 'label', 'text'],
+      'undo':     ['back', 'revert', 'history', 'undo'],
+      'polygon':  ['shape', 'geometry', 'polygon'],
+      'line':     ['path', 'stroke', 'polyline', 'line'],
+      'point':    ['dot', 'marker', 'vertex', 'point'],
+      'buffer':   ['proximity', 'radius', 'buffer'],
+      'clip':     ['crop', 'intersect', 'extract', 'clip'],
+      'merge':    ['union', 'combine', 'join', 'merge'],
+      'split':    ['divide', 'separate', 'split'],
+      'join':     ['merge', 'connect', 'union', 'join'],
+      'erase':    ['delete', 'remove', 'clear', 'erase'],
+      'clear':    ['erase', 'empty', 'reset', 'clear'],
+      'export':   ['download', 'output', 'save', 'export'],
+      'import':   ['upload', 'input', 'load', 'import']
+    };
+
+    function expandSearchTerms(query) {
+      var terms = [query];
+      var words = query.split(/\s+/);
+      for (var i = 0; i < words.length; i++) {
+        var syns = SYNONYMS[words[i]];
+        if (syns) {
+          for (var j = 0; j < syns.length; j++) {
+            if (terms.indexOf(syns[j]) === -1) {
+              terms.push(syns[j]);
+            }
+          }
+        }
+      }
+      return terms;
+    }
+
     let searchTimeout;
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimeout);
@@ -1043,15 +1158,15 @@
     // ============================================
     
     function filterIcons() {
-      filteredIcons = allIcons.filter(icon => {
-        // Category filter
+      var expandedTerms = searchQuery ? expandSearchTerms(searchQuery) : [];
+
+      filteredIcons = allIcons.filter(function(icon) {
         if (currentCategory !== 'all' && icon.context_key !== currentCategory) {
           return false;
         }
 
-        // Search filter
         if (searchQuery) {
-          const searchFields = [
+          var searchFields = [
             icon.icon_name,
             icon.icon_key,
             icon.context,
@@ -1060,9 +1175,14 @@
             icon.tags ? icon.tags.join(' ') : ''
           ].filter(Boolean).join(' ').toLowerCase();
           
-          if (!searchFields.includes(searchQuery)) {
-            return false;
+          var matched = false;
+          for (var i = 0; i < expandedTerms.length; i++) {
+            if (searchFields.indexOf(expandedTerms[i]) !== -1) {
+              matched = true;
+              break;
+            }
           }
+          if (!matched) return false;
         }
 
         return true;
