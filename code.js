@@ -111,12 +111,20 @@ figma.ui.onmessage = async (msg) => {
         figma.clientStorage.setAsync('icon-data', msg.payload);
     }
     if (msg.type === 'get-cached-thumbnails') {
-        figma.clientStorage.getAsync('icon-thumbnails').then(cached => {
+        figma.clientStorage.getAsync('icon-thumbnails').then(function(cached) {
             figma.ui.postMessage({ type: 'cached-thumbnails', payload: cached || null });
         });
     }
     if (msg.type === 'cache-thumbnails') {
         figma.clientStorage.setAsync('icon-thumbnails', msg.payload);
+    }
+    if (msg.type === 'get-cached-thumbnails-dark') {
+        figma.clientStorage.getAsync('icon-thumbnails-dark').then(function(cached) {
+            figma.ui.postMessage({ type: 'cached-thumbnails-dark', payload: cached || null });
+        });
+    }
+    if (msg.type === 'cache-thumbnails-dark') {
+        figma.clientStorage.setAsync('icon-thumbnails-dark', msg.payload);
     }
     if (msg.type === 'close') {
         figma.closePlugin();

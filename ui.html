@@ -115,24 +115,6 @@
       color: var(--calcite-ui-text-3);
     }
 
-    .size-filter {
-      height: 32px;
-      padding: 0 var(--calcite-spacing-sm);
-      border: 1px solid var(--calcite-ui-border-input);
-      border-radius: var(--calcite-border-radius);
-      font-family: inherit;
-      font-size: var(--calcite-font-size-sm);
-      background: var(--calcite-ui-foreground-1);
-      cursor: pointer;
-      outline: none;
-      min-width: 80px;
-    }
-
-    .size-filter:focus {
-      border-color: var(--calcite-ui-brand);
-      box-shadow: 0 0 0 1px var(--calcite-ui-brand);
-    }
-
     .mode-toggle {
       display: flex;
       border: 1px solid var(--calcite-ui-border-input);
@@ -571,9 +553,6 @@
           placeholder="Search icons..."
           disabled
         />
-        <select class="size-filter" id="size-filter" disabled>
-          <option value="all">All sizes</option>
-        </select>
         <div class="mode-toggle">
           <button class="mode-toggle-btn active" id="mode-light" title="Light mode (A)">
             <svg class="mode-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -663,6 +642,7 @@
     const REPO_BASE = 'https://raw.githubusercontent.com/manulcosta-ds/icon-esri/main';
     const JSON_URL = REPO_BASE + '/icons.json';
     const THUMBNAILS_URL = REPO_BASE + '/thumbnails.json';
+    const THUMBNAILS_DARK_URL = REPO_BASE + '/thumbnails-dark.json';
 
     // How long (ms) to consider cached data fresh before re-fetching.
     // Default: 24 hours. Set to 0 to always fetch.
@@ -676,9 +656,7 @@
     let filteredIcons = [];
     let selectedIcons = new Set();
     let categories = [];
-    let sizes = [];
     let currentCategory = 'all';
-    let currentSize = 'all';
     let searchQuery = '';
     let currentMode = 'A'; // A = Light, B = Dark
 
@@ -687,7 +665,6 @@
     // ============================================
     
     const searchInput = document.getElementById('search-input');
-    const sizeFilter = document.getElementById('size-filter');
     const categoryList = document.getElementById('category-list');
     const iconGrid = document.getElementById('icon-grid');
     const iconCount = document.getElementById('icon-count');
@@ -706,16 +683,18 @@
     // MODE TOGGLE
     // ============================================
     
-    modeLightBtn.addEventListener('click', () => {
+    modeLightBtn.addEventListener('click', function() {
       currentMode = 'A';
       modeLightBtn.classList.add('active');
       modeDarkBtn.classList.remove('active');
+      renderIconGrid();
     });
 
-    modeDarkBtn.addEventListener('click', () => {
+    modeDarkBtn.addEventListener('click', function() {
       currentMode = 'B';
       modeDarkBtn.classList.add('active');
       modeLightBtn.classList.remove('active');
+      renderIconGrid();
     });
 
     // ============================================
@@ -752,6 +731,15 @@
       }, '*');
     }
 
+    function cacheDarkThumbnails(thumbs) {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'cache-thumbnails-dark',
+          payload: { thumbnails: thumbs, timestamp: Date.now() }
+        }
+      }, '*');
+    }
+
     async function fetchJSON(url) {
       try {
         const response = await fetch(url);
@@ -765,7 +753,7 @@
 
     function applyThumbnails(thumbs) {
       if (!thumbs || typeof thumbs !== 'object') return;
-      allIcons.forEach(icon => {
+      allIcons.forEach(function(icon) {
         if (thumbs[icon.id]) {
           icon.svg_thumbnail = thumbs[icon.id];
         }
@@ -773,15 +761,27 @@
       renderIconGrid();
     }
 
+    function applyDarkThumbnails(thumbs) {
+      if (!thumbs || typeof thumbs !== 'object') return;
+      allIcons.forEach(function(icon) {
+        if (thumbs[icon.id]) {
+          icon.svg_thumbnail_dark = thumbs[icon.id];
+        }
+      });
+      if (currentMode === 'B') {
+        renderIconGrid();
+      }
+    }
+
     function loadThumbnails(cachedThumbs) {
       if (cachedThumbs && cachedThumbs.thumbnails) {
-        const age = Date.now() - (cachedThumbs.timestamp || 0);
-        const isFresh = CACHE_MAX_AGE_MS > 0 && age < CACHE_MAX_AGE_MS;
+        var age = Date.now() - (cachedThumbs.timestamp || 0);
+        var isFresh = CACHE_MAX_AGE_MS > 0 && age < CACHE_MAX_AGE_MS;
 
         applyThumbnails(cachedThumbs.thumbnails);
 
         if (!isFresh && THUMBNAILS_URL) {
-          fetchJSON(THUMBNAILS_URL).then(data => {
+          fetchJSON(THUMBNAILS_URL).then(function(data) {
             if (data) {
               cacheThumbnails(data);
               applyThumbnails(data);
@@ -792,10 +792,38 @@
       }
 
       if (THUMBNAILS_URL) {
-        fetchJSON(THUMBNAILS_URL).then(data => {
+        fetchJSON(THUMBNAILS_URL).then(function(data) {
           if (data) {
             cacheThumbnails(data);
             applyThumbnails(data);
+          }
+        });
+      }
+    }
+
+    function loadDarkThumbnails(cachedThumbs) {
+      if (cachedThumbs && cachedThumbs.thumbnails) {
+        var age = Date.now() - (cachedThumbs.timestamp || 0);
+        var isFresh = CACHE_MAX_AGE_MS > 0 && age < CACHE_MAX_AGE_MS;
+
+        applyDarkThumbnails(cachedThumbs.thumbnails);
+
+        if (!isFresh && THUMBNAILS_DARK_URL) {
+          fetchJSON(THUMBNAILS_DARK_URL).then(function(data) {
+            if (data) {
+              cacheDarkThumbnails(data);
+              applyDarkThumbnails(data);
+            }
+          });
+        }
+        return;
+      }
+
+      if (THUMBNAILS_DARK_URL) {
+        fetchJSON(THUMBNAILS_DARK_URL).then(function(data) {
+          if (data) {
+            cacheDarkThumbnails(data);
+            applyDarkThumbnails(data);
           }
         });
       }
@@ -820,17 +848,23 @@
         parent.postMessage({
           pluginMessage: { type: 'get-cached-thumbnails' }
         }, '*');
+        parent.postMessage({
+          pluginMessage: { type: 'get-cached-thumbnails-dark' }
+        }, '*');
         return;
       }
 
       if (JSON_URL) {
         showLoading();
-        fetchJSON(JSON_URL).then(data => {
+        fetchJSON(JSON_URL).then(function(data) {
           if (data && Array.isArray(data) && data.length > 0) {
             cacheIconData(data);
             initializeWithData(data);
             parent.postMessage({
               pluginMessage: { type: 'get-cached-thumbnails' }
+            }, '*');
+            parent.postMessage({
+              pluginMessage: { type: 'get-cached-thumbnails-dark' }
             }, '*');
           } else {
             showManualImport();
@@ -851,6 +885,10 @@
 
       if (msg.type === 'cached-thumbnails') {
         loadThumbnails(msg.payload);
+      }
+
+      if (msg.type === 'cached-thumbnails-dark') {
+        loadDarkThumbnails(msg.payload);
       }
     };
 
@@ -932,13 +970,9 @@
       });
       categories = Array.from(categorySet.values()).sort((a, b) => a.name.localeCompare(b.name));
 
-      sizes = [...new Set(allIcons.map(icon => icon.size))].sort((a, b) => a - b);
-
       buildCategoryList();
-      buildSizeFilter();
       
       searchInput.disabled = false;
-      sizeFilter.disabled = false;
 
       loadingSection.style.display = 'none';
       importSection.style.display = 'none';
@@ -992,23 +1026,6 @@
     }
 
     // ============================================
-    // SIZE FILTER
-    // ============================================
-    
-    function buildSizeFilter() {
-      let html = '<option value="all">All sizes</option>';
-      sizes.forEach(size => {
-        html += `<option value="${size}">${size}px</option>`;
-      });
-      sizeFilter.innerHTML = html;
-    }
-
-    sizeFilter.addEventListener('change', () => {
-      currentSize = sizeFilter.value;
-      filterIcons();
-    });
-
-    // ============================================
     // SEARCH
     // ============================================
     
@@ -1029,11 +1046,6 @@
       filteredIcons = allIcons.filter(icon => {
         // Category filter
         if (currentCategory !== 'all' && icon.context_key !== currentCategory) {
-          return false;
-        }
-
-        // Size filter
-        if (currentSize !== 'all' && icon.size !== parseInt(currentSize)) {
           return false;
         }
 
@@ -1077,14 +1089,12 @@
       // Render icons
       iconGrid.innerHTML = filteredIcons.map(icon => {
         const isSelected = selectedIcons.has(icon.id);
-        const hasThumbnail = icon.svg_thumbnail;
+        var thumb = (currentMode === 'B' && icon.svg_thumbnail_dark) ? icon.svg_thumbnail_dark : icon.svg_thumbnail;
         
-        let previewContent;
-        if (hasThumbnail) {
-          // Use the embedded SVG
-          previewContent = '<div class="icon-svg">' + icon.svg_thumbnail + '</div>';
+        var previewContent;
+        if (thumb) {
+          previewContent = '<div class="icon-svg">' + thumb + '</div>';
         } else {
-          // Fallback to placeholder
           previewContent = '<div class="icon-placeholder">' + icon.size + '</div>';
         }
         

@@ -8,6 +8,7 @@
   "editorType": ["figma"],
   "ui": "ui.html",
   "networkAccess": {
-    "allowedDomains": ["*"]
+    "allowedDomains": ["https://raw.githubusercontent.com"],
+    "reasoning": "Fetches icon metadata and thumbnails from a GitHub repository"
   }
 }
